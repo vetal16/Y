@@ -1,107 +1,5 @@
-/*http://www.holehouse.org/mlclass/09_Neural_Networks_Learning.html*/
-function NumberRecognition(){
-	var canvas,
-		context,
-		network,
-		rand,
-		learn,
-		max=2;
-	
-	function constructor(){
-		canvas = document.getElementById("canvas");
-		context = canvas.getContext("2d");
-		learn = document.getElementById("learn");
-		events();
-		reset();
-	}
-	function events(){
-		document.addEventListener("mousedown", mousedown);
-		document.addEventListener("mouseup", mouseup);
-	}
-	function mousedown(){
-		canvas.addEventListener("mousemove", mousemove);
-	}
-	function mouseup(){
-		canvas.removeEventListener("mousemove", mousemove);
-	}
-	function mousemove(ev){
-		context.fillStyle="#fff";
-		context.fillRect(ev.pageX-canvas.offsetLeft, ev.pageY-canvas.offsetTop, 2, 2);
-	}
-	function reset(){
-		context.fillStyle="#000";
-		context.fillRect(0, 0, canvas.width, canvas.height);
-		if(learn.checked){
-			rand = getRandomInt(0, max);
-			console.log("Random: " + rand);
-		}else{
-			rand=undefined;
-		}
-	}
-	function getRandomInt(min, max) {
-		return Math.floor(Math.random() * (max - min + 1)) + min;
-	}
-	function getData(){
-		var imgData=context.getImageData(0, 0, canvas.width, canvas.height);
-		var data=[];
-		//Get array of 1&0s for white of black pixels
-		for(var i=0; i < imgData.data.length;i+=4){
-			if(imgData.data[i]===0){
-				data.push(0);
-			}else{
-				data.push(1);
-			}
-		}
-		return data;
-	}
-	function submit(){
-		var data=getData();
-		predict(data);
-		reset();
-	}
-	function predict(data){
-		//if(!network){
-			//network = new neuralNetwork();
-		//}
-		//network.predict(data,rand);
-		var request = {};
-		request.data = data;
-		if(rand != undefined){
-			var y = new Array(max+1);
-			for(var i=0;i<y.length;i++){
-				if(i===rand){
-					y[i]=1;
-				}else{
-					y[i]=0;
-				}
-			}
-			request.actual = y;
-		}
-		$.ajax({
-			url:'/predict',
-			data:JSON.stringify(request),
-			method:'POST',
-			contentType: 'application/json; charset=utf-8',
-			dataType: 'json'
-		}).done(function(response){
-			var result=0;
-			var guess;
-			for(var i in response){
-				if(z3[i]>result){
-					result=z3[i];
-					guess=i;
-				}
-			}
-			console.log(guess);
-		});
-	}
-	constructor();
-	
-	return{
-		reset:reset,
-		submit:submit
-	}
-}
+var fs = require('fs');
+
 function neuralNetwork(_config){
 	var config = _config ? _config : {};
 	var theta1; // 25 x 1601
@@ -111,6 +9,7 @@ function neuralNetwork(_config){
 	var num_labels = config.num_labels ? config.num_labels : 3;          // 10 labels, from 1 to 10
 	var e = config.e ? config.e : 0.12;
 	var learningRate = config.learningRate ? config.learningRate : 0.3;
+	var saveThetas = config.saveThetas != undefined ? config.saveThetas : true;
 	
 	function initialise(){
 		theta1 = new Array(hidden_layer_size);
@@ -126,6 +25,9 @@ function neuralNetwork(_config){
 			for(var j=0;j<=hidden_layer_size;j++){
 				theta2[i].push(Math.random() * 2 * e - e);
 			}
+		}
+		if(persistThetas){
+			loadThetas();
 		}
 	}
 	
@@ -160,22 +62,13 @@ function neuralNetwork(_config){
 			}
 		}
 		if(actual != undefined){
-			y = new Array(num_labels);
-			for(var i=0;i<y.length;i++){
-				if(i===actual){
-					y[i]=1;
-				}else{
-					y[i]=0;
-				}
-			}
+			y = actual;
 			learn(_data,z3,y,z2,z3,a1,a2);
 		}
-		console.log(guess);
-		//console.log(z3);
-		return {
-			values:z3,
-			guess:guess
-		};
+		if(persistThetas){	
+			saveThetas();
+		}
+		return z3;
 	}
 	function learn(input,output,actual,z2/*25x1*/,z3/*10x1*/,a1/*1601x1*/,a2/*11x1*/){
 		var delta3=new Array(num_labels); // 10 x 1
@@ -222,6 +115,7 @@ function neuralNetwork(_config){
 				theta2[i][j]-=(Delta2[i][j]*learningRate);
 			}
 		}
+		persistThetas();
 	}
 	function sigmoidGradient(_z){
 		var z = _z.slice(0);;
@@ -233,18 +127,31 @@ function neuralNetwork(_config){
 	function sigmoid(num){
 		return  1 / (1 + Math.exp(-num));
 	}
+	function loadThetas(){
+		fs.readFile('thetas.json', 'utf8', function (err, data) {
+		  if (!err){
+			obj = JSON.parse(data);
+			if(obj.theta1) theta1 = object.theta1;
+			if(obj.theta2) theta1 = object.theta2;
+		  }
+		});
+	}
+	function persistThetas(){
+		if(!saveThetas) return;
+		var obj={};
+		obj.theta1 = theta1;
+		obj.theta2 = theta2;
+		fs.writeFile('thetas.json', JSON.stringify(obj), function (err,data) {
+		  if (err) {
+			return console.log(err);
+		  }
+		});
+
+	}
 	initialise();
 	
 	return{
 		predict:predict
 	}
 }
-(function(){
-	var r = new NumberRecognition();
-	
-	var reset=document.getElementById("reset");
-	reset.addEventListener("click",r.reset);
-	
-	var submit=document.getElementById("submit"); 
-	submit.addEventListener("click",r.submit);
-})();
+module.exports = neuralNetwork;
