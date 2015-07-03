@@ -26,7 +26,7 @@ function neuralNetwork(_config){
 				theta2[i].push(Math.random() * 2 * e - e);
 			}
 		}
-		if(persistThetas){
+		if(saveThetas){
 			loadThetas();
 		}
 	}
@@ -53,24 +53,16 @@ function neuralNetwork(_config){
 			}
 			z3.push(sigmoid(value));
 		}
-		var result=0;
-		var guess;
-		for(var i in z3){
-			if(z3[i]>result){
-				result=z3[i];
-				guess=i;
-			}
-		}
 		if(actual != undefined){
-			y = actual;
-			learn(_data,z3,y,z2,z3,a1,a2);
+			var y = actual;
+			learn(_data,z3,y,z2,a1,a2);
 		}
-		if(persistThetas){	
-			saveThetas();
+		if(saveThetas){	
+			persistThetas();
 		}
 		return z3;
 	}
-	function learn(input,output,actual,z2/*25x1*/,z3/*10x1*/,a1/*1601x1*/,a2/*11x1*/){
+	function learn(input,output,actual,z2/*25x1*/,a1/*1601x1*/,a2/*11x1*/){
 		var delta3=new Array(num_labels); // 10 x 1
 		for(var i=0;i<delta3.length;i++){
 			delta3[i]=output[i]-actual[i];
@@ -131,8 +123,8 @@ function neuralNetwork(_config){
 		fs.readFile('thetas.json', 'utf8', function (err, data) {
 		  if (!err){
 			obj = JSON.parse(data);
-			if(obj.theta1) theta1 = object.theta1;
-			if(obj.theta2) theta1 = object.theta2;
+			if(obj.theta1) theta1 = obj.theta1;
+			if(obj.theta2) theta1 = obj.theta2;
 		  }
 		});
 	}

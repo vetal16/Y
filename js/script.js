@@ -57,7 +57,7 @@ function NumberRecognition(){
 	function submit(){
 		var data=getData();
 		predict(data);
-		reset();
+		//reset();
 	}
 	function predict(data){
 		//if(!network){
@@ -65,7 +65,7 @@ function NumberRecognition(){
 		//}
 		//network.predict(data,rand);
 		var request = {};
-		request.data = data;
+		request.predict = data;
 		if(rand != undefined){
 			var y = new Array(max+1);
 			for(var i=0;i<y.length;i++){
@@ -87,12 +87,13 @@ function NumberRecognition(){
 			var result=0;
 			var guess;
 			for(var i in response){
-				if(z3[i]>result){
-					result=z3[i];
+				if(response[i]>result){
+					result=response[i];
 					guess=i;
 				}
 			}
 			console.log(guess);
+			reset();
 		});
 	}
 	constructor();
