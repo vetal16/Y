@@ -124,7 +124,7 @@ function neuralNetwork(_config){
 		  if (!err){
 			obj = JSON.parse(data);
 			if(obj.theta1) theta1 = obj.theta1;
-			if(obj.theta2) theta1 = obj.theta2;
+			if(obj.theta2) theta2 = obj.theta2;
 		  }
 		});
 	}
